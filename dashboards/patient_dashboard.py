@@ -149,7 +149,7 @@ def patient_dashboard():
     ])
 
     # Handle sidebar selection
-    if selected != "Dashboard" and selected in CATEGORIES:
+    if selected != "Dashboard" and selected in  CATEGORIES:
         st.session_state.selected_category = selected
         st.session_state.view = "category"
         st.session_state.selected_module = None
@@ -361,6 +361,7 @@ def show_module_detail():
     code, name, desc, tables, records = st.session_state.selected_module
     cat_key = st.session_state.selected_category
     
+   
     # Breadcrumb
     st.markdown(f"Category {cat_key.split('-')[0].strip()} > {name}")
     st.markdown(f"# {name}")

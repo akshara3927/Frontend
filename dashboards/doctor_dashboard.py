@@ -354,6 +354,11 @@ def show_category_view():
 def show_module_detail():
     code, name, desc, tables, records = st.session_state.selected_module
     cat_key = st.session_state.selected_category
+
+    if code == "G4":
+        from g4_patient_consent.consent_form import show_consent_page
+        show_consent_page()
+        return
     
     # Breadcrumb
     st.markdown(f"Category {cat_key.split('-')[0].strip()} > {name}")
