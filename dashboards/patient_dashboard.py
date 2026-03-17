@@ -1,9 +1,7 @@
-# dashboards/patient_dashboard.py
 import streamlit as st
 from components.sidebar import sidebar
 from components.charts import patient_line_chart, appointment_donut_chart
 
-# All categories and their modules
 CATEGORIES = {
     "A - Patient Clinical Data": {
         "title": "Patient Clinical Data Management",
@@ -134,7 +132,6 @@ def patient_dashboard():
     st.session_state.setdefault("selected_category", None)
     st.session_state.setdefault("selected_module", None)
 
-    # Sidebar
     selected = sidebar([
         "Dashboard",
         "A - Patient Clinical Data",
@@ -148,8 +145,7 @@ def patient_dashboard():
         "I - Integrated Capstone Projects"
     ])
 
-    # Handle sidebar selection
-    if selected != "Dashboard" and selected in  CATEGORIES:
+    if selected != "Dashboard" and selected in CATEGORIES and st.session_state.view == "main":
         st.session_state.selected_category = selected
         st.session_state.view = "category"
         st.session_state.selected_module = None
@@ -158,7 +154,6 @@ def patient_dashboard():
         st.session_state.selected_category = None
         st.session_state.selected_module = None
 
-    # ROUTER
     if st.session_state.view == "category":
         show_category_view()
     elif st.session_state.view == "module":
@@ -167,7 +162,6 @@ def patient_dashboard():
         show_main_dashboard()
 
 def show_main_dashboard():
-    # Top bar with search and user profile
     col1, col2, col3, col4 = st.columns([6, 1, 1, 2])
     with col1:
         st.text_input("🔍", placeholder="Search patients, doctors, reports...", label_visibility="collapsed")
@@ -176,14 +170,15 @@ def show_main_dashboard():
     with col3:
         st.button("💬")
     with col4:
-        st.markdown("**Sarah Johnson**  \n*Patient*")
-    
+        name = st.session_state.get("patient_name", "Patient")
+        st.markdown(f"**{name}**  \n*Patient*")
+
     st.divider()
-    
-    # Welcome section with health score
+
     col_welcome, col_score = st.columns([3, 1])
     with col_welcome:
-        st.markdown("## Welcome back, Sarah!")
+        name = st.session_state.get("patient_name", "there")
+        st.markdown(f"## Welcome back, {name}!")
         st.markdown("*Here's an overview of your health dashboard*")
     with col_score:
         st.markdown("**Health Score**")
@@ -191,7 +186,6 @@ def show_main_dashboard():
 
     st.divider()
 
-    # Quick action buttons
     c1, c2, c3, c4 = st.columns(4)
     with c1:
         st.button("📅 Book Appointment", use_container_width=True)
@@ -204,13 +198,11 @@ def show_main_dashboard():
 
     st.divider()
 
-    # Main content area
     main_col, side_col = st.columns([2, 1])
-    
+
     with main_col:
         st.subheader("Your Health Categories")
-        
-        # Clinical Records Card
+
         with st.container():
             cat_col1, cat_col2 = st.columns([4, 1])
             with cat_col1:
@@ -222,10 +214,9 @@ def show_main_dashboard():
                     st.session_state.selected_category = "A - Patient Clinical Data"
                     st.session_state.view = "category"
                     st.rerun()
-        
+
         st.markdown("---")
-        
-        # Laboratory Card
+
         with st.container():
             cat_col1, cat_col2 = st.columns([4, 1])
             with cat_col1:
@@ -237,10 +228,9 @@ def show_main_dashboard():
                     st.session_state.selected_category = "B - Symptom-Disease Diagnosis"
                     st.session_state.view = "category"
                     st.rerun()
-        
+
         st.markdown("---")
-        
-        # Pharmacy Card
+
         with st.container():
             cat_col1, cat_col2 = st.columns([4, 1])
             with cat_col1:
@@ -252,58 +242,55 @@ def show_main_dashboard():
                     st.session_state.selected_category = "D - Drug & Prescription Safety"
                     st.session_state.view = "category"
                     st.rerun()
-        
+
         st.markdown("---")
-        
-        # Billing Card
+
         with st.container():
             cat_col1, cat_col2 = st.columns([4, 1])
             with cat_col1:
-                st.markdown("### 💳 Billing")
-                st.caption("View invoices, payments, and insurance claims")
-                st.markdown("**2 Pending**")
+                st.markdown("### 🔒 My Consent")
+                st.caption("Manage your data privacy and consent settings")
+                st.markdown("**G4 Module**")
             with cat_col2:
-                if st.button("→", key="billing", use_container_width=True):
+                if st.button("→", key="consent", use_container_width=True):
                     st.session_state.selected_category = "G - Secure EHR & Access Control"
-                    st.session_state.view = "category"
+                    st.session_state.selected_module = ("G4", "Patient Consent & Data Privacy Database", "Privacy management", 5, 18700)
+                    st.session_state.view = "module"
                     st.rerun()
-    
+
     with side_col:
         st.subheader("Upcoming Appointments")
         st.markdown("[View All](#)")
-        
-        # Appointment 1
+
         with st.container():
             st.markdown("#### 👨‍⚕️ Dr. Sarah Wilson")
             st.caption("Cardiology")
             st.caption("📅 Jan 10, 2026  🕐 10:30 AM")
-        
+
         st.markdown("---")
-        
-        # Appointment 2
+
         with st.container():
             st.markdown("#### 👨‍⚕️ Dr. Michael Chen")
             st.caption("General Medicine")
             st.caption("📅 Jan 15, 2026  🕐 2:00 PM")
-        
+
         st.markdown("---")
         st.button("📅 Book New Appointment", use_container_width=True)
-        
+
         st.divider()
-        
-        # Recent Activity
+
         st.subheader("Recent Activity")
-        
+
         st.markdown("🔵 **Lab Result**")
         st.caption("Blood test results available")
         st.caption("2 hours ago")
         st.markdown("---")
-        
+
         st.markdown("🔵 **Prescription**")
         st.caption("New medication prescribed")
         st.caption("1 day ago")
         st.markdown("---")
-        
+
         st.markdown("🔵 **Appointment**")
         st.caption("Appointment confirmed with Dr. Wilson")
         st.caption("2 days ago")
@@ -311,28 +298,25 @@ def show_main_dashboard():
 def show_category_view():
     cat_key = st.session_state.selected_category
     category = CATEGORIES[cat_key]
-    
-    # Header with icon and title
+
     col1, col2 = st.columns([3, 1])
     with col1:
         st.markdown(f"# {category['icon']} {category['title']}")
         st.markdown(f"*{category['description']}*")
     with col2:
         st.button("📄 Export Data", use_container_width=True)
-    
+
     st.divider()
-    
-    # Stats cards
+
     stats = category['stats']
     c1, c2, c3 = st.columns(3)
     c1.metric("📊 Total Records", stats['total'])
     c2.metric("⚠️ Active Alerts", stats['alerts'])
     c3.metric("⚡ Modules", stats['modules'])
-    
+
     st.divider()
     st.markdown("## Modules")
-    
-    # Module cards in grid
+
     cols = st.columns(3)
     for idx, module in enumerate(category['modules']):
         code, name, desc, tables, records = module
@@ -341,17 +325,17 @@ def show_category_view():
                 st.markdown(f"### {code}")
                 st.markdown(f"**{name}**")
                 st.caption(desc)
-                
+
                 mcol1, mcol2 = st.columns(2)
                 mcol1.metric("Tables", tables)
                 mcol2.metric("Records", f"{records:,}")
-                
+
                 if st.button("→", key=f"mod_{code}", use_container_width=True):
                     st.session_state.selected_module = module
                     st.session_state.view = "module"
                     st.rerun()
                 st.markdown("---")
-    
+
     st.divider()
     if st.button("⬅ Back to Dashboard"):
         st.session_state.view = "main"
@@ -360,37 +344,37 @@ def show_category_view():
 def show_module_detail():
     code, name, desc, tables, records = st.session_state.selected_module
     cat_key = st.session_state.selected_category
-    
-   
-    # Breadcrumb
+
+    if code == "G4":
+        from g4_patient_consent.consent_form import show_consent_page
+        show_consent_page()
+        return
+
     st.markdown(f"Category {cat_key.split('-')[0].strip()} > {name}")
     st.markdown(f"# {name}")
     st.markdown(f"*{desc}*")
-    
-    # Tabs
+
     tab = st.radio("", ["🏠 Home", "🔗 ER Diagram", "📋 Tables", "🔍 SQL Query", "⚡ Triggers", "📊 Output"], horizontal=True)
     st.divider()
-    
+
     if tab == "🏠 Home":
         st.info(f"**{name}** - {desc}")
-        
         col1, col2 = st.columns(2)
         with col1:
             st.markdown("### Input Entities")
             st.success("1️⃣ Patient Form")
             st.success("2️⃣ Insurance Details")
             st.success("3️⃣ Emergency Contact")
-        
         with col2:
             st.markdown("### Output Entities")
             st.success("1️⃣ Patient Record")
             st.success("2️⃣ Admission Summary")
             st.success("3️⃣ Patient ID")
-    
+
     elif tab == "🔗 ER Diagram":
         st.markdown("### Entity Relationship Diagram")
         st.image("https://via.placeholder.com/900x500?text=ER+Diagram+for+" + code)
-    
+
     elif tab == "📋 Tables":
         st.markdown("### Database Tables")
         st.table({
@@ -398,7 +382,7 @@ def show_module_detail():
             "Records": [12500, 8900, 6400, 15200, 22100],
             "Status": ["✅ Active", "✅ Active", "✅ Active", "✅ Active", "✅ Active"]
         })
-    
+
     elif tab == "🔍 SQL Query":
         st.markdown("### Sample SQL Queries")
         st.code(f"""
@@ -410,10 +394,9 @@ WHERE p.status = 'active'
 ORDER BY p.admission_date DESC
 LIMIT 100;
 """, language="sql")
-        
         if st.button("▶️ Execute Query"):
             st.success("Query executed successfully! 1,234 rows returned.")
-    
+
     elif tab == "⚡ Triggers":
         st.markdown("### Database Triggers")
         st.code(f"""
@@ -424,19 +407,16 @@ FOR EACH ROW
 BEGIN
   INSERT INTO audit_logs (entity_type, entity_id, action, timestamp)
   VALUES ('patient', NEW.patient_id, 'INSERT', NOW());
-  
-  -- Send notification
   INSERT INTO notifications (user_id, message)
   VALUES (NEW.assigned_doctor, CONCAT('New patient registered: ', NEW.name));
 END;
 """, language="sql")
-    
+
     elif tab == "📊 Output":
         st.markdown("### Module Output")
         st.success("✅ Patient Registered Successfully")
         st.info("📋 Patient ID: PT-2024-001234")
         st.info("📅 Registration Date: January 08, 2026")
-        
         st.markdown("#### Generated Records")
         st.json({
             "patient_id": "PT-2024-001234",
@@ -445,7 +425,7 @@ END;
             "admission_date": "2026-01-08",
             "status": "active"
         })
-    
+
     st.divider()
     if st.button("⬅ Back to Modules"):
         st.session_state.view = "category"
