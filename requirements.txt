@@ -1,3 +1,8 @@
 streamlit
 streamlit-option-menu
 matplotlib
+pymongo
+fastapi
+uvicorn
+pydantic
+email-validator
