@@ -1,12 +1,12 @@
 # dashboards/patient_dashboard.py
 from datetime import datetime
 import streamlit as st
-from components.sidebar import sidebar
-from components.charts import patient_line_chart, appointment_donut_chart
-from database import research
-from views.consent_view import consent_management_view
-from views.research_view import research_studies_view
-from views.privacy_policy import privacy_policy_view
+from src.modules.patientconsent.components.sidebar import sidebar
+from src.modules.patientconsent.components.charts import patient_line_chart, appointment_donut_chart
+from src.modules.patientconsent.database import research
+from src.modules.patientconsent.views.consent_view import consent_management_view
+from src.modules.patientconsent.views.research_view import research_studies_view
+from src.modules.patientconsent.views.privacy_policy import privacy_policy_view
  
 
 # All categories and their modules

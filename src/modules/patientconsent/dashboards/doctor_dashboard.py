@@ -1,10 +1,10 @@
 # dashboards/doctor_dashboard.py
 import requests
 import streamlit as st
-from components.sidebar import sidebar
-from components.charts import patient_line_chart, appointment_donut_chart
+from src.modules.patientconsent.components.sidebar import sidebar
+from src.modules.patientconsent.components.charts import patient_line_chart, appointment_donut_chart
 import matplotlib.pyplot as plt
-from database import consents
+from src.modules.patientconsent.database import consents
 
 BASE_URL = "http://localhost:8000"
 
