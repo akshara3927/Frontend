@@ -3,11 +3,7 @@ from pymongo import MongoClient
 from pathlib import Path
 
 def load_secrets():
-    """Load secrets from .streamlit/secrets.toml"""
-    # Go up to project root (Frontend/) then find .streamlit
     base_path = Path(__file__).resolve()
-    # database.py is at: src/modules/patientconsent/database.py
-    # Need to go up 4 levels to reach root
     project_root = base_path.parent.parent.parent.parent
     secrets_path = project_root / ".streamlit" / "secrets.toml"
     
@@ -18,13 +14,10 @@ def load_secrets():
     return {}
 
 def get_mongo_uri():
-    """Get MongoDB URI from environment or secrets file"""
-    # Try environment variable first
     uri = os.environ.get("MONGO_URI")
     if uri:
         return uri
     
-    # Try reading from secrets.toml file directly
     try:
         secrets = load_secrets()
         if "general" in secrets and "MONGO_URI" in secrets["general"]:
@@ -34,25 +27,21 @@ def get_mongo_uri():
     
     return "mongodb://localhost:27017"
 
-# Lazy connection - only connects when actually used
 _client = None
 
 def get_client():
     global _client
     if _client is None:
-        _client = MongoClient(get_mongo_uri())
+        _client = MongoClient(get_mongo_uri(), serverSelectionTimeoutMS=5000)
     return _client
 
 def get_db():
-    return get_client()["mydatabase"]
+    return get_client()["patientconsent"]
 
-# Legacy compatibility - keep these for existing code
-collection = get_db()["users"]
-consents = get_db()["consents"]
-research = get_db()["research_studies"]
-privacy_policies = get_db()["privacy_policies"]
-permissions = get_db()["permissions"]
+# Collections
 db = get_db()
-
-
-
+users = db["users"]
+consents = db["consents"]
+research = db["research_studies"]
+privacy_policies = db["privacy_policies"]
+permissions = db["permissions"]

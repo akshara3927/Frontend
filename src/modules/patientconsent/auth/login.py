@@ -1,5 +1,5 @@
 import streamlit as st
-from src.modules.patientconsent.database import collection
+from src.modules.patientconsent.database import users
 
 def login_page():
     st.title("🏥 MediCare Login")
@@ -10,11 +10,10 @@ def login_page():
 
     if st.button("Login"):
 
-        user = collection.find_one({"email": email})
+        user = users.find_one({"email": email})
 
         if user and user["password"] == password:
 
-            # role must match exactly
             if user["role"] == role:
 
                 st.session_state.logged_in = True
@@ -22,8 +21,10 @@ def login_page():
                 st.session_state.user = user 
                 st.session_state.page = "dashboard"
                 st.session_state["email"] = email
+
                 st.success("Login successful!")
                 st.rerun()
+
             else:
                 st.error("Selected role does not match your account")
 

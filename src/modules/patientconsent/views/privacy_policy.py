@@ -1,7 +1,5 @@
 import streamlit as st
-import requests
-
-BASE_URL = "http://localhost:8000"
+from src.modules.patientconsent.database import privacy_policies
 
 
 def privacy_policy_view():
@@ -9,43 +7,20 @@ def privacy_policy_view():
 
     st.subheader("📜 Current Policy")
 
-    try:
-        r = requests.get(f"{BASE_URL}/privacy-policies/latest", timeout=5)
+    # 🔹 Fetch latest policy from MongoDB
+    policy = privacy_policies.find_one(sort=[("effective_date", -1)])
 
-        if r.ok:
-            policy = r.json()
-
-            st.markdown(f"""
+    if policy:
+        st.markdown(f"""
 ### Version: {policy.get("version", "1.0")}
 **Effective Date:** {policy.get("effective_date", "N/A")}
 
 ---
 
-We respect and protect patient data. All personal and medical information is stored securely and accessed only through patient consent.
-
-Data is used for treatment, authorized sharing, and research participation. Patients can grant or revoke consent at any time.
-
-For research, data may be anonymized to protect identity. No data is shared without permission.
-
-By using this system, you agree to this policy.
+{policy.get("content", "")}
 """)
-
-        else:
-            st.warning("No policy found in backend. Showing default policy.")
-
-            # 🔥 fallback default
-            st.markdown("""
-### Privacy Policy – MediCare
-
-We respect and protect patient data. All personal and medical information is stored securely and accessed only through consent.
-
-Data is used only for treatment and research (if approved). Users can control their data at any time.
-
-By using this system, you agree to these terms.
-""")
-
-    except Exception:
-        st.warning("Backend not reachable. Showing default policy.")
+    else:
+        st.warning("No policy found. Showing default policy.")
 
         # 🔥 fallback default
         st.markdown("""
@@ -60,7 +35,7 @@ By using this system, you agree to these terms.
 
     st.divider()
 
-    # ✅ simple acknowledgment
+    # ✅ acknowledgment
     agree = st.checkbox("I have read and agree to the privacy policy")
 
     if agree:

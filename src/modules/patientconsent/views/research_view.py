@@ -1,22 +1,9 @@
 """
-Module 40 – Research Studies View
-Patients can browse open studies, enroll (with consent check), and withdraw.
-Researchers/Admins can create new studies.
+Module 40 – Research Studies View (Streamlit + MongoDB)
 """
 import streamlit as st
-import requests
-
-BASE_URL = "http://localhost:8000"
-
-
-def _fetch_studies(status=None):
-    try:
-        params = {"status": status} if status else {}
-        r = requests.get(f"{BASE_URL}/research-studies", params=params, timeout=5)
-        return r.json() if r.ok else []
-    except Exception:
-        return []
-
+from datetime import datetime
+from src.modules.patientconsent.database import research
 
 def research_studies_view():
     email = st.session_state.get("email", "")
@@ -24,12 +11,11 @@ def research_studies_view():
 
     st.header("🔬 Research Studies")
 
-    # 🔴 IMPORTANT: ensure user logged in
     if not email:
         st.error("❌ Please login first")
         st.stop()
 
-    # ───────────── CREATE STUDY (Doctor/Admin) ─────────────
+    # ───────────── CREATE STUDY ─────────────
     if role in ("Doctor", "Admin"):
         with st.expander("➕ Create New Research Study"):
             with st.form("create_study_form"):
@@ -43,63 +29,39 @@ def research_studies_view():
                 status = st.selectbox("Status", ["Recruiting", "Active", "Closed"])
 
                 if st.form_submit_button("Create Study"):
-                    payload = {
+                    research.insert_one({
                         "title": title,
                         "description": description,
                         "researcher_email": email,
                         "data_types_required": data_types,
-                        "status": status
-                    }
-                    try:
-                        r = requests.post(f"{BASE_URL}/research-studies", json=payload, timeout=5)
-                        if r.ok:
-                            st.success("Study created!")
-                            st.rerun()
-                        else:
-                            st.error(r.text)
-                    except Exception as e:
-                        st.error(str(e))
+                        "status": status,
+                        "participants": [],
+                        "created_at": datetime.now()
+                    })
+                    st.success("Study created!")
+                    st.rerun()
 
     # ───────────── MY PARTICIPATIONS ─────────────
     if role == "Patient":
         with st.expander("📋 My Research Participations"):
-            try:
-                r = requests.get(
-                    f"{BASE_URL}/research-studies/participations/{email}",
-                    timeout=5
-                )
-                parts = r.json() if r.ok else []
-            except Exception:
-                parts = []
 
-            if not parts:
+            my_studies = list(research.find({
+                "participants": {"$elemMatch": {"patient_email": email}}
+            }))
+
+            if not my_studies:
                 st.info("You are not enrolled in any studies.")
 
-            for p in parts:
-                status_icon = "🟢" if p.get("status") == "active" else "🔴"
+            for study in my_studies:
+                st.write(f"📘 {study['title']} ({study['status']})")
 
-                st.write(
-                    f"{status_icon} Study ID: `{p.get('study_id')}` | "
-                    f"Anonymized: {p.get('anonymized')} | Status: {p.get('status')}"
-                )
-
-                # Withdraw button
-                if p.get("status") == "active":
-                    if st.button("Withdraw", key=f"wd_{p['id']}"):
-                        try:
-                            requests.post(
-                                f"{BASE_URL}/research-studies/withdraw",
-                                json={
-                                    "patient_email": email,
-                                    "study_id": p["study_id"],
-                                    "anonymized": True
-                                },
-                                timeout=5
-                            )
-                            st.warning("Withdrawn.")
-                            st.rerun()
-                        except Exception as e:
-                            st.error(str(e))
+                if st.button("Withdraw", key=f"wd_{study['_id']}"):
+                    research.update_one(
+                        {"_id": study["_id"]},
+                        {"$pull": {"participants": {"patient_email": email}}}
+                    )
+                    st.warning("Withdrawn.")
+                    st.rerun()
 
     # ───────────── OPEN STUDIES ─────────────
     st.subheader("Open Studies")
@@ -109,7 +71,8 @@ def research_studies_view():
         ["All", "Recruiting", "Active", "Closed"]
     )
 
-    studies = _fetch_studies(None if status_filter == "All" else status_filter)
+    query = {} if status_filter == "All" else {"status": status_filter}
+    studies = list(research.find(query))
 
     if not studies:
         st.info("No studies found.")
@@ -129,35 +92,26 @@ def research_studies_view():
                 f"**Researcher:** {study.get('researcher_email','—')}"
             )
 
-            # 🔥 ENROLL BUTTON (MAIN FIX)
             if role == "Patient":
 
                 anonymized = st.checkbox(
-                    "Participate anonymously (recommended)",
+                    "Participate anonymously",
                     value=True,
-                    key=f"anon_{study['id']}"
+                    key=f"anon_{study['_id']}"
                 )
 
-                if st.button("Enroll in Study", key=f"enroll_{study['id']}"):
+                if st.button("Enroll in Study", key=f"enroll_{study['_id']}"):
 
-                    payload = {
-                        "patient_email": email,
-                        "study_id": study["id"],
-                        "anonymized": anonymized
-                    }
+                    research.update_one(
+                        {"_id": study["_id"]},
+                        {"$push": {
+                            "participants": {
+                                "patient_email": email,
+                                "anonymized": anonymized,
+                                "joined_at": datetime.now()
+                            }
+                        }}
+                    )
 
-                    try:
-                        r = requests.post(
-                            f"{BASE_URL}/research-studies/enroll",
-                            json=payload,
-                            timeout=5
-                        )
-
-                        if r.ok:
-                            st.success("✅ Enrolled successfully!")
-                            st.rerun()   # 🔥 IMPORTANT
-                        else:
-                            st.error(r.text)
-
-                    except Exception as e:
-                        st.error(str(e))
+                    st.success("✅ Enrolled successfully!")
+                    st.rerun()

@@ -1,11 +1,9 @@
 """
-Module 40 – Consent Management View
+Module 40 – Consent Management View (Streamlit + MongoDB)
 """
 import streamlit as st
-import requests
 from datetime import datetime, timedelta
-
-BASE_URL = "http://localhost:8000"
+from src.modules.patientconsent.database import consents
 
 CONSENT_TYPES = ["Treatment", "Research", "Sharing", "Marketing"]
 PERMISSION_LEVELS = ["Full", "Limited", "Anonymous", "None"]
@@ -13,14 +11,6 @@ DATA_TYPES = [
     "medical_records", "lab_results", "imaging",
     "prescriptions", "research", "personal_data", "billing"
 ]
-
-
-def _fetch_consents(email):
-    try:
-        r = requests.get(f"{BASE_URL}/consents/{email}", timeout=5)
-        return r.json() if r.ok else []
-    except Exception:
-        return []
 
 
 def _status_badge(status):
@@ -40,14 +30,16 @@ def consent_management_view():
     with tabs[0]:
         st.subheader("Active & Past Consents")
 
-        consents = _fetch_consents(email)
+        consents_list = list(consents.find({"patient_email": email}))
 
-        if not consents:
+        if not consents_list:
             st.info("No consents found.")
 
-        for c in consents:
+        for c in consents_list:
+            status = c.get("status", "active")
+
             with st.expander(
-                f"{c.get('consent_type','?')} › {c.get('data_type','?')} — {_status_badge(c.get('status',''))}"
+                f"{c.get('consent_type','?')} › {c.get('data_type','?')} — {_status_badge(status)}"
             ):
                 col1, col2 = st.columns(2)
 
@@ -57,7 +49,7 @@ def consent_management_view():
                 if c.get("expiry_date"):
                     st.write(f"**Expires:** {str(c['expiry_date'])[:16]}")
 
-                if c.get("status") == "active":
+                if status == "active":
                     col_a, col_b = st.columns(2)
 
                     new_level = col_a.selectbox(
@@ -66,34 +58,24 @@ def consent_management_view():
                         index=PERMISSION_LEVELS.index(
                             c.get("permission_level", "Full")
                         ),
-                        key=f"upd_{c['id']}"
+                        key=f"upd_{c['_id']}"
                     )
 
-                    if col_a.button("Update", key=f"upd_btn_{c['id']}"):
-                        try:
-                            r = requests.put(
-                                f"{BASE_URL}/consents/update",
-                                json={
-                                    "consent_id": c["id"],
-                                    "permission_level": new_level
-                                },
-                                timeout=5
-                            )
-                            st.success("Updated!" if r.ok else "Error")
-                            st.rerun()
-                        except Exception as e:
-                            st.error(str(e))
+                    if col_a.button("Update", key=f"upd_btn_{c['_id']}"):
+                        consents.update_one(
+                            {"_id": c["_id"]},
+                            {"$set": {"permission_level": new_level}}
+                        )
+                        st.success("Updated!")
+                        st.rerun()
 
-                    if col_b.button("Revoke", key=f"rev_{c['id']}", type="primary"):
-                        try:
-                            requests.post(
-                                f"{BASE_URL}/consents/{c['id']}/revoke",
-                                timeout=5
-                            )
-                            st.warning("Consent revoked.")
-                            st.rerun()
-                        except Exception as e:
-                            st.error(str(e))
+                    if col_b.button("Revoke", key=f"rev_{c['_id']}", type="primary"):
+                        consents.update_one(
+                            {"_id": c["_id"]},
+                            {"$set": {"status": "revoked"}}
+                        )
+                        st.warning("Consent revoked.")
+                        st.rerun()
 
     # ───────────── TAB 2: GRANT CONSENT ─────────────
     with tabs[1]:
@@ -101,89 +83,69 @@ def consent_management_view():
 
         with st.form("new_consent_form"):
 
-            # 🔥 IMPORTANT FIX: use session email ONLY
-            patient_email = email
             st.write(f"Patient Email: {email}")
 
             data_type = st.selectbox("Data Type", DATA_TYPES)
             consent_type = st.selectbox("Consent Type", CONSENT_TYPES)
             permission_lvl = st.selectbox("Permission Level", PERMISSION_LEVELS)
 
-            use_expiry = st.checkbox("Set expiry date (Dynamic Consent)")
+            use_expiry = st.checkbox("Set expiry date")
             expiry_date = None
 
             if use_expiry:
-                days = st.number_input(
-                    "Expires in (days)",
-                    min_value=1,
-                    max_value=3650,
-                    value=365
-                )
-                expiry_date = (
-                    datetime.now() + timedelta(days=int(days))
-                ).isoformat()
+                days = st.number_input("Expires in (days)", 1, 3650, 365)
+                expiry_date = datetime.now() + timedelta(days=int(days))
 
             submitted = st.form_submit_button("Grant Consent")
 
             if submitted:
-                payload = {
-                    "patient_email": patient_email,
+                consents.insert_one({
+                    "patient_email": email,
                     "data_type": data_type,
                     "consent_type": consent_type,
                     "permission_level": permission_lvl,
-                    "expiry_date": expiry_date
-                }
+                    "expiry_date": expiry_date,
+                    "timestamp": datetime.now(),
+                    "status": "active"
+                })
 
-                try:
-                    r = requests.post(
-                        f"{BASE_URL}/consents",
-                        json=payload,
-                        timeout=5
-                    )
-                    if r.ok:
-                        st.success("Consent granted successfully!")
-                        st.rerun()   # 🔥 refresh → now visible in Tab 1
-                    else:
-                        st.error(r.text)
-                except Exception as e:
-                    st.error(str(e))
+                st.success("Consent granted successfully!")
+                st.rerun()
 
-    # ───────────── TAB 3: COMPLIANCE REPORT ─────────────
+    # ───────────── TAB 3: REPORT ─────────────
     with tabs[2]:
         st.subheader("Privacy Compliance Report")
 
         if st.button("Generate Report"):
-            try:
-                r = requests.get(
-                    f"{BASE_URL}/consents/{email}/compliance-report",
-                    timeout=5
-                )
 
-                if r.ok:
-                    report = r.json()
+            data = list(consents.find({"patient_email": email}))
 
-                    st.write(f"**Generated at:** {report.get('generated_at','')}")
-                    st.write(f"**Total consents:** {report.get('total', 0)}")
+            total = len(data)
 
-                    col1, col2, col3 = st.columns(3)
+            by_type = {}
+            by_status = {}
+            by_permission = {}
 
-                    with col1:
-                        st.write("**By Type**")
-                        for k, v in report.get("by_type", {}).items():
-                            st.write(f"- {k}: {v}")
+            for c in data:
+                by_type[c["consent_type"]] = by_type.get(c["consent_type"], 0) + 1
+                by_status[c.get("status", "active")] = by_status.get(c.get("status", "active"), 0) + 1
+                by_permission[c["permission_level"]] = by_permission.get(c["permission_level"], 0) + 1
 
-                    with col2:
-                        st.write("**By Status**")
-                        for k, v in report.get("by_status", {}).items():
-                            st.write(f"- {k}: {v}")
+            st.write(f"**Total consents:** {total}")
 
-                    with col3:
-                        st.write("**By Permission Level**")
-                        for k, v in report.get("by_permission", {}).items():
-                            st.write(f"- {k}: {v}")
+            col1, col2, col3 = st.columns(3)
 
-                else:
-                    st.error("Could not fetch report")
+            with col1:
+                st.write("**By Type**")
+                for k, v in by_type.items():
+                    st.write(f"- {k}: {v}")
 
-            except Exception as e:
-                st.error(str(e))
+            with col2:
+                st.write("**By Status**")
+                for k, v in by_status.items():
+                    st.write(f"- {k}: {v}")
+
+            with col3:
+                st.write("**By Permission Level**")
+                for k, v in by_permission.items():
+                    st.write(f"- {k}: {v}")

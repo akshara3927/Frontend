@@ -1,5 +1,5 @@
 import streamlit as st
-from src.modules.patientconsent.database import collection
+from src.modules.patientconsent.database import users
 
 def signup_page():
     st.title("Create Account")
@@ -11,16 +11,16 @@ def signup_page():
 
     if st.button("Create Account"):
 
-        existing_user = collection.find_one({"email": email})
+        existing_user = users.find_one({"email": email})
 
         if existing_user:
             st.error("User already exists")
         else:
-            collection.insert_one({
+            users.insert_one({
                 "name": name,
                 "email": email,
                 "password": password,
-                "role": role   # ✅ store EXACT same (Patient/Doctor)
+                "role": role
             })
 
             st.success("Account created!")
