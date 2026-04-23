@@ -1,5 +1,5 @@
 import streamlit as st
-from src.modules.patientconsent.database import privacy_policies
+from database import privacy_policies
 
 
 def privacy_policy_view():

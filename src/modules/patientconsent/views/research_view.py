@@ -3,7 +3,7 @@ Module 40 – Research Studies View (Streamlit + MongoDB)
 """
 import streamlit as st
 from datetime import datetime
-from src.modules.patientconsent.database import research
+from database import research
 
 def research_studies_view():
     email = st.session_state.get("email", "")

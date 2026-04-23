@@ -3,7 +3,7 @@ Module 40 – Consent Management View (Streamlit + MongoDB)
 """
 import streamlit as st
 from datetime import datetime, timedelta
-from src.modules.patientconsent.database import consents
+from database import consents
 
 CONSENT_TYPES = ["Treatment", "Research", "Sharing", "Marketing"]
 PERMISSION_LEVELS = ["Full", "Limited", "Anonymous", "None"]
