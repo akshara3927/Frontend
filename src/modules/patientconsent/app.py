@@ -1,9 +1,5 @@
 
-# ── Entry Point ───────────────────────────────────────────────────────────────
-
-if _name_ == "_main_":
-    import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+# ── Streamlit Entry Point ───────────────────────────────────────────────────
 
 import streamlit as st
 from src.modules.patientconsent.auth.login import login_page
