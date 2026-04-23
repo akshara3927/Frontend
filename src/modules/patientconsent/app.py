@@ -2,11 +2,11 @@
 # ── Streamlit Entry Point ───────────────────────────────────────────────────
 
 import streamlit as st
-from modules.patientconsent.auth.login import login_page
-from modules.patientconsent.auth.signup import signup_page
-from modules.patientconsent.dashboards.patient_dashboard import patient_dashboard
-from modules.patientconsent.dashboards.doctor_dashboard import doctor_dashboard
-from modules.patientconsent.dashboards.admin_dashboard import admin_dashboard
+from auth.login import login_page
+from auth.signup import signup_page
+from dashboards.patient_dashboard import patient_dashboard
+from dashboards.doctor_dashboard import doctor_dashboard
+from dashboards.admin_dashboard import admin_dashboard
 
 # ---------------- PAGE CONFIG ----------------
 st.set_page_config(page_title="MediCare", layout="wide")
