@@ -1,4 +1,4 @@
-from .database import collection, consents, db, research, privacy_policies, permissions
+from database import collection, consents, db, research, privacy_policies, permissions
 from datetime import datetime
 from bson import ObjectId
 

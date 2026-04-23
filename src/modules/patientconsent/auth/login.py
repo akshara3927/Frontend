@@ -1,5 +1,5 @@
 import streamlit as st
-from src.modules.patientconsent.database import users
+from database import users
 
 def login_page():
     st.title("🏥 MediCare Login")
